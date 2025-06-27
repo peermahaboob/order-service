@@ -1,0 +1,1 @@
+setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js']

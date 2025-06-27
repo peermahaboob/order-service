@@ -1,8 +1,12 @@
 const express = require('express');
+const axios = require('axios');
+
 const orderApp = express();
 orderApp.use(express.json());
 
 const orders = [];
+
+const CUSTOMER_SERVICE_URL = process.env.CUSTOMER_SERVICE_URL || 'http://localhost:8081';
 
 orderApp.get('/orders', (req, res) => {
   res.json(orders);
@@ -13,10 +17,17 @@ orderApp.get('/orders/:id', async (req, res) => {
   if (!order) return res.status(404).send({ error: 'Order not found' });
 
   try {
-    const customerResponse = await axios.get(`http://localhost:8081/customers/${order.customerId}`);
+    const customerResponse = await axios.get(
+      `${CUSTOMER_SERVICE_URL}/customers/${order.customerId}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
     res.json({ ...order, customer: customerResponse.data });
-  } catch (e) {
-    res.status(500).send({ error: 'Failed to fetch customer details' });
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      res.status(404).send({ error: 'Customer not found' });
+    } else {
+      res.status(500).send({ error: 'Failed to fetch customer details' });
+    }
   }
 });
 
@@ -26,4 +37,8 @@ orderApp.post('/orders', (req, res) => {
   res.status(201).json(order);
 });
 
-orderApp.listen(8082, () => console.log('Order Service running on port 8082'));
+if (require.main === module) {
+  orderApp.listen(8082, () => console.log('Order Service running on port 8082'));
+}
+
+module.exports = orderApp;
