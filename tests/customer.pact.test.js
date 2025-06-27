@@ -1,30 +1,32 @@
 const { Pact } = require("@pact-foundation/pact");
 const axios = require("axios");
 const path = require("path");
-const baseUrl = provider.mockService.baseUrl;
+
+let provider;
+
+beforeAll(() => {
+  provider = new Pact({
+    consumer: "OrderService",
+    provider: "CustomerService",
+    port: 1234,
+    log: path.resolve(process.cwd(), "logs", "pact.log"),
+    dir: path.resolve(process.cwd(), "pacts"),
+    logLevel: "INFO",
+  });
+  return provider.setup();
+});
+
+afterAll(() => provider.finalize());
+
+// DRY: Helper to set up interactions
+const setupInteraction = (interaction) => {
+  return provider.addInteraction(interaction);
+};
 
 describe("Order Service - Customer Service Contract", () => {
   describe("GET /customers/:id - existing customer", () => {
-    let provider;
-    const setupPactProvider = () =>
-      new Pact({
-        consumer: "OrderService",
-        provider: "CustomerService",
-        port: 0, // Random port
-        log: path.resolve(process.cwd(), "logs", "pact.log"),
-        dir: path.resolve(process.cwd(), "pacts"),
-        logLevel: "INFO",
-      });
-
-    beforeAll(() => {
-      provider = setupPactProvider();
-      return provider.setup();
-    });
-
-    afterAll(() => provider.finalize());
-
-    beforeEach(() =>
-      provider.addInteraction({
+    beforeEach(() => {
+      return setupInteraction({
         state: "customer with id 1 exists",
         uponReceiving: "a request for customer with id 1",
         withRequest: {
@@ -41,10 +43,12 @@ describe("Order Service - Customer Service Contract", () => {
             email: "alice@example.com",
           },
         },
-      })
-    );
+      });
+    });
 
     it("should return customer details", async () => {
+      const baseUrl = provider.mockService.baseUrl;
+
       const response = await axios.get(`${baseUrl}/customers/1`, {
         headers: { Accept: "application/json" },
       });
@@ -61,16 +65,8 @@ describe("Order Service - Customer Service Contract", () => {
   });
 
   describe("GET /customers/:id - non-existent customer", () => {
-    let provider;
-
-    beforeAll(() => {
-      provider = setupPactProvider();
-      return provider.setup();
-    });
-    afterAll(() => provider.finalize());
-
-    beforeEach(() =>
-      provider.addInteraction({
+    beforeEach(() => {
+      return setupInteraction({
         state: "customer with id 999 does not exist",
         uponReceiving: "a request for non-existent customer",
         withRequest: {
@@ -85,11 +81,13 @@ describe("Order Service - Customer Service Contract", () => {
             error: "Customer not found",
           },
         },
-      })
-    );
+      });
+    });
 
     it("should return 404 for non-existent customer", async () => {
-      const response = await axios.get("http://localhost:1235/customers/999", {
+      const baseUrl = provider.mockService.baseUrl;
+
+      const response = await axios.get(`${baseUrl}/customers/999`, {
         headers: { Accept: "application/json" },
         validateStatus: () => true,
       });
