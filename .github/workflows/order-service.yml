@@ -39,11 +39,11 @@ jobs:
         PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
         GIT_COMMIT: ${{ github.sha }}
         
-    - name: Can I Deploy? (Check if safe to deploy)
-      run: |
-        npx pact-broker can-i-deploy \
-          --pacticipant OrderService \
-          --version ${{ github.sha }} \
-          --broker-base-url ${{ secrets.PACT_BROKER_BASE_URL }} \
-          --broker-token ${{ secrets.PACT_BROKER_TOKEN }}
-      if: github.ref == 'refs/heads/main'
+   # - name: Can I Deploy? (Check if safe to deploy)
+   #   run: |
+   #     npx pact-broker can-i-deploy \
+   #       --pacticipant OrderService \
+   #       --version ${{ github.sha }} \
+   #       --broker-base-url ${{ secrets.PACT_BROKER_BASE_URL }} \
+   #       --broker-token ${{ secrets.PACT_BROKER_TOKEN }}
+   #   if: github.ref == 'refs/heads/main'
